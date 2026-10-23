@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Payroll Runs{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Compensation Engine</span>
+    <h1>Payroll Management</h1>
+    <p>Gross pay = Basic + Allowances + Bonus. Net pay = Gross − Deductions (PF, Taxes & LOP).</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-light" href="{{ url_for('export_payroll_csv') }}">
+      <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV Report
+    </a>
+    <a class="btn btn-outline-primary" href="{{ url_for('anomalies') }}">
+      <i class="bi bi-shield-check"></i> AI Anomaly Scanner
+    </a>
+  </div>
+</div>
+
+<!-- Bulk Pay Run & Single Pay Run Accordion/Panels -->
+<div class="row g-4 mb-4">
+  <!-- 1-Click Bulk Pay Run -->
+  <div class="col-lg-5">
+    <div class="panel h-100" style="background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); border-color: #c7d2fe;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-primary text-white">⚡ ONE-CLICK RUN</span>
+        <h2 class="h5 mb-0 fw-bold">Automated Bulk Pay Run</h2>
+      </div>
+      <p class="small text-muted mb-3">
+        Processes all active employees in 1 click. Automatically computes basic, standard 15% allowance, 12% EPF statutory deduction, and integrates attendance LOP and Overtime.
+      </p>
+
+      <form method="post" action="{{ url_for('bulk_create_payroll') }}">
+        <div class="mb-3">
+          <label class="form-label">Pay Period (Month)</label>
+          <input class="form-control" type="month" name="pay_month" required value="{{ today.strftime('%Y-%m') }}">
+        </div>
+        <button class="btn btn-primary w-100 py-2 fw-bold" onclick="return confirm('Run automated bulk payroll for all active employees for this month?')">
+          <i class="bi bi-play-circle-fill"></i> Run Payroll for All Active Employees
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Single Employee Calculation -->
+  <div class="col-lg-7">
+    <div class="panel h-100">
+      <h2 class="h5 mb-3 fw-bold"><i class="bi bi-calculator text-primary"></i> Manual / Individual Pay Run</h2>
+      
+      {% if employees %}
+      <form method="post" action="{{ url_for('create_payroll') }}">
+        <div class="row g-3">
+          <div class="col-md-7">
+            <label class="form-label">Select Employee</label>
+            <select class="form-select" name="employee_id" id="empSelect" required>
+              {% for e in employees %}
+              <option value="{{ e.id }}" data-basic="{{ e.monthly_basic }}">
+                {{ e.employee_code }} — {{ e.name }} (₹{{ "{:,.0f}".format(e.monthly_basic) }}/mo)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Pay Month</label>
+            <input class="form-control" type="month" name="pay_month" required value="{{ today.strftime('%Y-%m') }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Allowances (HRA / DA) ₹</label>
+            <input class="form-control" type="number" min="0" step="10" name="allowance" id="allowanceInput" value="3000" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Bonus / Incentives ₹</label>
+            <input class="form-control" type="number" min="0" step="10" name="bonus" id="bonusInput" value="0" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Deductions (PF / Tax) ₹</label>
+            <input class="form-control" type="number" min="0" step="10" name="deductions" id="deductionsInput" value="3000" required>
+          </div>
+        </div>
+
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" name="apply_attendance" value="1" id="applyAttCheck" checked>
+          <label class="form-check-label small" for="applyAttCheck">
+            <strong>Auto-apply Attendance Adjustments:</strong> Add Loss of Pay (LOP) to deductions & Overtime to bonus if logged for this month.
+          </label>
+        </div>
+
+        <button class="btn btn-primary mt-3">
+          <i class="bi bi-save2"></i> Calculate & Save Record
+        </button>
+      </form>
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <p>No active employees found. Please add an employee first.</p>
+        <a href="{{ url_for('new_employee') }}" class="btn btn-sm btn-primary">Add Employee</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Payroll History Table -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">
+      <i class="bi bi-card-checklist text-primary"></i> Payroll History & Records
+    </h2>
+    
+    <!-- Filter by Month -->
+    <form method="get" action="{{ url_for('payroll') }}" class="d-flex align-items-center gap-2">
+      <select class="form-select form-select-sm" name="month" onchange="this.form.submit()">
+        <option value="">All Pay Months</option>
+        {% for m in available_months %}
+        <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+      {% if selected_month %}
+      <a href="{{ url_for('payroll') }}" class="btn btn-sm btn-light">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="custom-table align-middle">
+      <thead>
+        <tr>
+          <th>Employee Details</th>
+          <th>Month</th>
+          <th>Basic Pay</th>
+          <th>Allowances</th>
+          <th>Bonus</th>
+          <th>Gross Pay</th>
+          <th>Deductions</th>
+          <th>Net Pay</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payrolls %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ p.employee.name }}</div>
+            <small class="text-muted">{{ p.employee.employee_code }} · {{ p.employee.department }}</small>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ p.pay_month }}</span></td>
+          <td>₹{{ "{:,.2f}".format(p.basic) }}</td>
+          <td>₹{{ "{:,.2f}".format(p.allowance) }}</td>
+          <td>₹{{ "{:,.2f}".format(p.bonus) }}</td>
+          <td class="fw-semibold">₹{{ "{:,.2f}".format(p.gross) }}</td>
+          <td class="text-danger">− ₹{{ "{:,.2f}".format(p.deductions) }}</td>
+          <td class="fw-bold text-success fs-6">₹{{ "{:,.2f}".format(p.net) }}</td>
+          <td><span class="badge-status badge-paid">{{ p.status }}</span></td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-primary" href="{{ url_for('payslip', payroll_id=p.id) }}">
+              <i class="bi bi-file-earmark-text"></i> Payslip
+            </a>
+            <form class="d-inline" method="post" action="{{ url_for('delete_payroll', payroll_id=p.id) }}" onsubmit="return confirm('Delete this payroll record for {{ p.employee.name }}?')">
+              <button class="btn btn-sm btn-outline-danger" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" class="text-center py-5 text-muted">
+            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+            No payroll records found for this criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

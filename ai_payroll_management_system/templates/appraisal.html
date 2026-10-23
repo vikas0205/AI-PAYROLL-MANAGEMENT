@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}AI Appraisal & Salary Increment{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Talent & Retention AI</span>
+    <h1>AI Appraisal & Salary Increment Recommender</h1>
+    <p>Data-driven annual hike recommendations combining performance ratings, tenure loyalty, and machine learning market benchmarks.</p>
+  </div>
+  <a class="btn btn-outline-primary" href="{{ url_for('salary_prediction') }}">
+    <i class="bi bi-cpu"></i> Market Prediction Engine
+  </a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="panel">
+      <h2 class="h5 fw-bold mb-3"><i class="bi bi-person-check text-primary"></i> Evaluate Employee for Appraisal</h2>
+      
+      <form method="post" action="{{ url_for('salary_appraisal') }}">
+        <div class="mb-3">
+          <label class="form-label">Select Employee</label>
+          <select class="form-select" name="employee_id" required>
+            {% for e in employees %}
+            <option value="{{ e.id }}" {% if selected_emp_id == e.id %}selected{% endif %}>
+              {{ e.employee_code }} — {{ e.name }} ({{ e.department }} · Current: ₹{{ "{:,.0f}".format(e.monthly_basic) }}/mo)
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Performance Review Rating (1 to 5)</label>
+          <select class="form-select" name="rating" required>
+            <option value="5">5 - Outstanding (★★★★★)</option>
+            <option value="4" selected>4 - Exceeds Expectations (★★★★☆)</option>
+            <option value="3">3 - Meets Expectations (★★★☆☆)</option>
+            <option value="2">2 - Needs Improvement (★★☆☆☆)</option>
+            <option value="1">1 - Unsatisfactory (★☆☆☆☆)</option>
+          </select>
+          <small class="text-muted">You can test different review ratings to simulate appraisal impact.</small>
+        </div>
+
+        <button class="btn btn-primary w-100 py-2 fw-bold" type="submit">
+          <i class="bi bi-calculator-fill"></i> Compute Recommended Salary Hike
+        </button>
+      </form>
+
+      <div class="p-3 bg-light rounded-3 mt-4 border">
+        <h6 class="fw-bold mb-2"><i class="bi bi-info-circle text-primary"></i> Appraisal Policy Rules</h6>
+        <ul class="small text-muted mb-0 ps-3">
+          <li><strong>Rating 5 (Outstanding):</strong> 18% – 25% base increment.</li>
+          <li><strong>Rating 4 (Exceeds):</strong> 12% – 16% base increment.</li>
+          <li><strong>Rating 3 (Meets):</strong> 6% – 10% standard inflation revision.</li>
+          <li><strong>Market Parity Correction:</strong> Extra +2% to +5% if underpaid compared to AI market benchmark.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    {% if result %}
+    <div class="panel h-100" style="background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%); border: 2px solid #10b981;">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-success text-white text-uppercase px-3 py-1">AI Recommendation</span>
+        <span class="fw-bold text-success fs-5">+{{ result.hike_percentage }}% Hike</span>
+      </div>
+
+      <h2 class="h5 fw-bold text-dark mb-3">{{ result.employee.name }} ({{ result.employee.designation }})</h2>
+
+      <!-- Side by Side Current vs New Salary -->
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <div class="p-3 bg-white rounded-3 border text-center">
+            <small class="text-muted text-uppercase fw-bold">Current Monthly</small>
+            <div class="fs-4 fw-bold text-secondary mt-1">₹{{ "{:,.0f}".format(result.current_monthly) }}</div>
+            <small class="text-muted">₹{{ "{:,.0f}".format(result.current_monthly * 12) }}/yr</small>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 bg-white rounded-3 border text-center" style="border-color: #10b981 !important;">
+            <small class="text-success text-uppercase fw-bold">Proposed Monthly</small>
+            <div class="fs-4 fw-bold text-success mt-1">₹{{ "{:,.0f}".format(result.new_monthly) }}</div>
+            <small class="text-success fw-semibold">₹{{ "{:,.0f}".format(result.new_annual) }}/yr</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Justification -->
+      <div class="p-3 bg-white rounded-3 border mb-3">
+        <h6 class="fw-bold mb-1 text-primary"><i class="bi bi-chat-quote-fill"></i> AI Recommendation Rationale</h6>
+        <p class="small text-muted mb-2">
+          Based on the performance evaluation of <strong>{{ result.rating_level }}</strong> and {{ result.employee.experience_years }} years of experience:
+        </p>
+        <div class="small bg-light p-2 rounded border">
+          <i class="bi bi-check2-circle text-success me-1"></i> {{ result.gap_note }}
+        </div>
+        <div class="small text-secondary mt-2">
+          Estimated competitive market median for this role: <strong>₹{{ "{:,.0f}".format(result.market_benchmark) }}/mo</strong>.
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary w-100" href="{{ url_for('edit_employee', employee_id=result.employee.id) }}">
+          <i class="bi bi-pencil-square"></i> Apply New Salary in Profile
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="panel h-100 text-center py-5">
+      <div class="stat-icon emerald mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.8rem;">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <h2 class="h5 fw-bold">Select an employee to generate appraisal</h2>
+      <p class="text-muted small max-w-sm mx-auto">
+        The AI Appraisal engine takes into account the employee's current pay tier, performance evaluation, and market prediction to recommend an optimal hike percentage.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

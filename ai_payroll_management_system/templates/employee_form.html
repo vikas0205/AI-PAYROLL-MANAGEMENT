@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if employee else 'Add' }} Employee{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Directory Management</span>
+    <h1>{{ 'Edit Employee Profile' if employee else 'Add New Employee' }}</h1>
+    <p>Fill in employee credentials, organizational role, and compensation baseline.</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('employees') }}">
+    <i class="bi bi-arrow-left"></i> Back to Directory
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="panel">
+      <form method="post">
+        <h4 class="h5 border-bottom pb-2 mb-3 text-secondary">
+          <i class="bi bi-person-badge"></i> Basic Information
+        </h4>
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <label class="form-label">Employee Code <span class="text-danger">*</span></label>
+            <input class="form-control" name="employee_code" required 
+                   value="{{ employee.employee_code if employee else '' }}" 
+                   placeholder="e.g. EMP007" style="text-transform: uppercase;">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+            <input class="form-control" name="name" required 
+                   value="{{ employee.name if employee else '' }}" 
+                   placeholder="e.g. John Doe">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Email Address <span class="text-danger">*</span></label>
+            <input class="form-control" type="email" name="email" required 
+                   value="{{ employee.email if employee else '' }}" 
+                   placeholder="john@example.com">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Contact Phone</label>
+            <input class="form-control" name="phone" 
+                   value="{{ employee.phone if employee else '+91 9876543210' }}" 
+                   placeholder="+91 9876543210">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Department <span class="text-danger">*</span></label>
+            <input class="form-control" name="department" required 
+                   value="{{ employee.department if employee else '' }}" 
+                   placeholder="Engineering, Analytics, HR, Finance">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Designation <span class="text-danger">*</span></label>
+            <input class="form-control" name="designation" required 
+                   value="{{ employee.designation if employee else '' }}" 
+                   placeholder="Python Developer, Data Analyst">
+          </div>
+        </div>
+
+        <h4 class="h5 border-bottom pb-2 mb-3 text-secondary">
+          <i class="bi bi-award"></i> Experience & Compensation Profile
+        </h4>
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label">Experience (Years)</label>
+            <input class="form-control" type="number" min="0" max="50" name="experience_years" required 
+                   value="{{ employee.experience_years if employee else 2 }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Education Qualification</label>
+            <select class="form-select" name="education">
+              <option value="UG" {% if employee and employee.education == 'UG' %}selected{% endif %}>Undergraduate (UG)</option>
+              <option value="PG" {% if employee and employee.education == 'PG' %}selected{% endif %}>Postgraduate (PG)</option>
+              <option value="Diploma" {% if employee and employee.education == 'Diploma' %}selected{% endif %}>Diploma</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Performance Rating (1 to 5)</label>
+            <select class="form-select" name="performance_rating">
+              <option value="5" {% if employee and employee.performance_rating == 5 %}selected{% endif %}>5 - Outstanding (★★★★★)</option>
+              <option value="4" {% if employee and employee.performance_rating == 4 %}selected{% endif %}>4 - Exceeds Expectations (★★★★☆)</option>
+              <option value="3" {% if not employee or employee.performance_rating == 3 %}selected{% endif %}>3 - Meets Expectations (★★★☆☆)</option>
+              <option value="2" {% if employee and employee.performance_rating == 2 %}selected{% endif %}>2 - Needs Improvement (★★☆☆☆)</option>
+              <option value="1" {% if employee and employee.performance_rating == 1 %}selected{% endif %}>1 - Unsatisfactory (★☆☆☆☆)</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Monthly Basic Salary (₹) <span class="text-danger">*</span></label>
+            <input class="form-control" type="number" min="0" step="100" id="monthlyBasicInput" name="monthly_basic" required 
+                   value="{{ employee.monthly_basic if employee else 35000 }}">
+          </div>
+        </div>
+
+        <!-- Live Salary Breakdown Preview -->
+        <div class="p-3 bg-light rounded-3 border mb-4">
+          <div class="row text-center g-2">
+            <div class="col-sm-4">
+              <small class="text-muted text-uppercase fw-bold">Annual Basic CTC</small>
+              <div class="fs-5 fw-bold text-primary" id="annualCtcPreview">₹0</div>
+            </div>
+            <div class="col-sm-4">
+              <small class="text-muted text-uppercase fw-bold">Est. 12% Monthly PF</small>
+              <div class="fs-5 fw-bold text-secondary" id="monthlyPfPreview">₹0</div>
+            </div>
+            <div class="col-sm-4">
+              <small class="text-muted text-uppercase fw-bold">Est. Daily Rate (22 days)</small>
+              <div class="fs-5 fw-bold text-success" id="dailyRatePreview">₹0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check-circle"></i> {{ 'Save Changes' if employee else 'Create Employee' }}
+          </button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('employees') }}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateBreakdown() {
+  const val = parseFloat(document.getElementById("monthlyBasicInput").value) || 0;
+  document.getElementById("annualCtcPreview").textContent = "₹" + (val * 12).toLocaleString();
+  document.getElementById("monthlyPfPreview").textContent = "₹" + (val * 0.12).toLocaleString();
+  document.getElementById("dailyRatePreview").textContent = "₹" + (val / 22).toFixed(0).toLocaleString();
+}
+document.getElementById("monthlyBasicInput").addEventListener("input", updateBreakdown);
+updateBreakdown();
+</script>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}HR & Payroll AI Assistant{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">AI Operations Support</span>
+    <h1>HR & Payroll AI Assistant</h1>
+    <p>Ask corporate payroll, statutory tax, EPF, HRA, and compliance questions with instant intelligent answers.</p>
+  </div>
+  <span class="badge {% if llm_enabled %}bg-success-subtle text-success{% else %}bg-primary-subtle text-primary{% endif %} border px-3 py-2 fw-bold">
+    <i class="bi bi-circle-fill me-1" style="font-size: 0.6rem;"></i>
+    {% if llm_enabled %}OpenAI LLM Connected{% else %}Offline Knowledge Engine Active{% endif %}
+  </span>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="chat-shell">
+      <!-- Chat Header -->
+      <div class="chat-header">
+        <div class="stat-icon indigo" style="width: 44px; height: 44px; font-size: 1.3rem;">
+          <i class="bi bi-robot text-primary"></i>
+        </div>
+        <div>
+          <div class="fw-bold fs-6">PayPilot AI HR Assistant</div>
+          <small class="text-white-50">
+            {% if llm_enabled %}Powered by OpenAI GPT-4o-mini{% else %}Enterprise Payroll Knowledge Base{% endif %}
+          </small>
+        </div>
+        <span class="ms-auto badge bg-success text-white">Online</span>
+      </div>
+
+      <!-- Quick Question Chips -->
+      <div class="p-3 bg-light border-bottom">
+        <small class="text-muted fw-bold d-block mb-1">Suggested Questions (Click to Ask):</small>
+        <div class="d-flex flex-wrap">
+          <a class="chip-suggestion" onclick="askPrompt('What is the difference between gross salary and net salary?')">
+            Gross vs Net Salary
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('How is employee provident fund (PF) calculated?')">
+            PF / EPF Calculation
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('Explain House Rent Allowance (HRA) exemption rules')">
+            HRA Exemption Rules
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('How does Loss of Pay (LOP) and unpaid leave affect salary?')">
+            Loss of Pay (LOP)
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('What is the difference between CTC and take home pay?')">
+            CTC vs Take Home
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('How are Overtime hours calculated in payroll?')">
+            Overtime Pay Rules
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('How does the AI Appraisal & Salary Increment engine work?')">
+            AI Appraisal Engine
+          </a>
+          <a class="chip-suggestion" onclick="askPrompt('How does AI detect payroll anomalies and errors?')">
+            AI Anomaly Detection
+          </a>
+        </div>
+      </div>
+
+      <!-- Chat Body -->
+      <div class="chat-messages" id="chatArea">
+        <!-- Welcome Message -->
+        <div class="bubble assistant">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge bg-primary text-white">PAYPILOT AI</span>
+            <small class="text-muted">Virtual Assistant</small>
+          </div>
+          <div>
+            Hello! I am your AI HR & Payroll specialist. Ask me anything about salary components, EPF deductions, HRA tax calculations, attendance Loss of Pay (LOP), or the machine learning predictors in PayPilot AI.
+          </div>
+        </div>
+
+        {% if question %}
+        <div class="bubble user">
+          <div class="fw-bold mb-1"><i class="bi bi-person-fill"></i> You</div>
+          <div>{{ question }}</div>
+        </div>
+        {% endif %}
+
+        {% if answer %}
+        <div class="bubble assistant">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-primary text-white">PAYPILOT AI</span>
+            <small class="text-muted">Response</small>
+          </div>
+          <div style="white-space: pre-line;">{{ answer }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Chat Input Area -->
+      <form method="post" id="chatForm" class="p-3 bg-white border-top">
+        <div class="mb-2">
+          <textarea class="form-control" id="questionInput" name="question" rows="2" 
+                    placeholder="Type a payroll question here... (e.g. How is HRA calculated?)" required></textarea>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <small class="text-muted">
+            <i class="bi bi-shield-check text-success"></i> Privacy protected · No confidential employee data is transferred.
+          </small>
+          <button class="btn btn-primary" type="submit">
+            Send Question <i class="bi bi-send-fill ms-1"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function askPrompt(text) {
+  document.getElementById("questionInput").value = text;
+  document.getElementById("chatForm").submit();
+}
+
+// Auto scroll chat to bottom
+const chatArea = document.getElementById("chatArea");
+if (chatArea) {
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Employees Directory{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Human Resources</span>
+    <h1>Employee Directory</h1>
+    <p>Manage employee records, salary tiers, and performance profiles.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-light" href="{{ url_for('export_employees_csv') }}">
+      <i class="bi bi-file-earmark-arrow-down"></i> Export CSV
+    </a>
+    <a class="btn btn-primary" href="{{ url_for('new_employee') }}">
+      <i class="bi bi-person-plus-fill"></i> Add New Employee
+    </a>
+  </div>
+</div>
+
+<!-- Search & Filter Panel -->
+<div class="panel p-3 mb-4">
+  <form method="get" action="{{ url_for('employees') }}" class="row g-2 align-items-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="input-group">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control border-start-0" name="q" value="{{ search }}" placeholder="Search by name, employee code, or role...">
+      </div>
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <select class="form-select" name="dept" onchange="this.form.submit()">
+        <option value="">All Departments</option>
+        {% for d in departments %}
+        <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-primary" type="submit">Filter</button>
+      {% if search or selected_dept %}
+      <a href="{{ url_for('employees') }}" class="btn btn-outline-secondary">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Employee Table Panel -->
+<div class="panel">
+  <div class="table-responsive">
+    <table class="custom-table align-middle">
+      <thead>
+        <tr>
+          <th>Employee Info</th>
+          <th>Department & Role</th>
+          <th>Experience</th>
+          <th>Performance</th>
+          <th>Monthly Basic</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in employees %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="stat-icon indigo" style="width: 38px; height: 38px; font-size: 0.95rem; font-weight: 700;">
+                {{ e.name[:2].upper() }}
+              </div>
+              <div>
+                <div class="fw-bold">{{ e.name }}</div>
+                <small class="text-muted">{{ e.employee_code }} · {{ e.email }}</small>
+                {% if e.phone %}
+                <small class="text-secondary d-block"><i class="bi bi-telephone"></i> {{ e.phone }}</small>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ e.department }}</div>
+            <small class="text-muted">{{ e.designation }} ({{ e.education }})</small>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ e.experience_years }} yrs</span>
+          </td>
+          <td>
+            <span class="text-warning">
+              {% for _ in range(e.performance_rating) %}★{% endfor %}
+              {% for _ in range(5 - e.performance_rating) %}☆{% endfor %}
+            </span>
+            <small class="text-muted ms-1">({{ e.performance_rating }}/5)</small>
+          </td>
+          <td class="fw-bold">
+            ₹{{ "{:,.2f}".format(e.monthly_basic) }}
+            <small class="text-muted d-block font-monospace">CTC: ₹{{ "{:,.0f}".format(e.monthly_basic * 12) }}/yr</small>
+          </td>
+          <td>
+            {% if e.active %}
+            <span class="badge-status badge-active"><i class="bi bi-dot"></i> Active</span>
+            {% else %}
+            <span class="badge-status badge-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('edit_employee', employee_id=e.id) }}">
+              <i class="bi bi-pencil"></i> Edit
+            </a>
+            {% if e.active %}
+            <form class="d-inline" method="post" action="{{ url_for('deactivate_employee', employee_id=e.id) }}" onsubmit="return confirm('Deactivate employee {{ e.name }}?')">
+              <button class="btn btn-sm btn-outline-danger" title="Deactivate">
+                <i class="bi bi-person-x"></i>
+              </button>
+            </form>
+            {% else %}
+            <form class="d-inline" method="post" action="{{ url_for('reactivate_employee', employee_id=e.id) }}">
+              <button class="btn btn-sm btn-outline-success" title="Reactivate">
+                <i class="bi bi-person-check"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-5 text-muted">
+            <i class="bi bi-people fs-1 d-block mb-2"></i>
+            No employees found matching criteria.
+            <div class="mt-2">
+              <a href="{{ url_for('employees') }}" class="btn btn-sm btn-light">Clear Filters</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

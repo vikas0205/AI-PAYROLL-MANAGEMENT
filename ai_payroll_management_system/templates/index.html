@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<!-- Hero Banner -->
+<div class="hero-card mb-4">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-8">
+      <div class="hero-tag">
+        <i class="bi bi-stars"></i> INTELLIGENT WORKFORCE & PAYROLL PLATFORM
+      </div>
+      <h1 class="hero-title">Automate Payroll with Machine Learning</h1>
+      <p class="hero-subtitle mb-4">
+        Accurately disburse salaries, record monthly attendance & loss-of-pay deductions, forecast market compensation using Random Forest ML, and detect payroll discrepancies automatically.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-primary" href="{{ url_for('payroll') }}">
+          <i class="bi bi-cash-stack"></i> Manage Payroll
+        </a>
+        <a class="btn btn-light" href="{{ url_for('attendance') }}">
+          <i class="bi bi-calendar-check"></i> Record Attendance
+        </a>
+        <a class="btn btn-outline-light" href="{{ url_for('salary_prediction') }}">
+          <i class="bi bi-cpu"></i> Predict Salary
+        </a>
+        {% else %}
+        <a class="btn btn-primary btn-lg" href="{{ url_for('login') }}">
+          <i class="bi bi-box-arrow-in-right"></i> Sign In as Admin
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4 text-center d-none d-lg-block">
+      <div style="font-size: 6rem; line-height: 1; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.3));">⚡</div>
+      <div class="fw-bold mt-2 text-white-50">Enterprise Ready · SQLite Engine</div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Stats Row -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-3 col-sm-6">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Active Employees</span>
+        <div class="stat-icon indigo"><i class="bi bi-people-fill"></i></div>
+      </div>
+      <div class="stat-val">{{ employee_count }}</div>
+      <div class="stat-change text-success">
+        <i class="bi bi-check-circle-fill me-1"></i> Active in database
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Pay Slips Issued</span>
+        <div class="stat-icon blue"><i class="bi bi-receipt"></i></div>
+      </div>
+      <div class="stat-val">{{ payroll_count }}</div>
+      <div class="stat-change text-primary">
+        <i class="bi bi-clock-history me-1"></i> Total payslip records
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Total Net Disbursed</span>
+        <div class="stat-icon emerald"><i class="bi bi-currency-rupee"></i></div>
+      </div>
+      <div class="stat-val">₹{{ "{:,.0f}".format(total_net) }}</div>
+      <div class="stat-change text-secondary">
+        Gross: ₹{{ "{:,.0f}".format(total_gross) }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">AI Audit & Anomaly</span>
+        <div class="stat-icon {% if anomaly_summary.risk_score > 30 %}amber{% else %}emerald{% endif %}">
+          <i class="bi bi-shield-check"></i>
+        </div>
+      </div>
+      <div class="stat-val fs-3">
+        {% if anomaly_summary.risk_score == 0 %}
+          <span class="text-success">Clean (0)</span>
+        {% else %}
+          <span class="text-warning">{{ anomaly_summary.anomalous_count }} Alert(s)</span>
+        {% endif %}
+      </div>
+      <div class="stat-change">
+        <a href="{{ url_for('anomalies') }}" class="text-decoration-none fw-semibold">
+          Run Full AI Scan →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Analytics Charts Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="panel h-100 mb-0">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-graph-up text-primary"></i> Monthly Payroll Expenditure
+        </h2>
+        <span class="badge bg-light text-secondary border">Gross vs Net Disbursal</span>
+      </div>
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="monthlyTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel h-100 mb-0">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-pie-chart text-secondary"></i> Department Outflow
+        </h2>
+        <span class="badge bg-light text-secondary border">Active Departments</span>
+      </div>
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="deptPieChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity & Quick Tools Row -->
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="panel mb-0">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-clock-history text-primary"></i> Recent Payroll Activity
+        </h2>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('payroll') }}" class="btn btn-sm btn-light">View all runs →</a>
+        {% endif %}
+      </div>
+
+      {% if latest_payrolls %}
+      <div class="table-responsive">
+        <table class="custom-table align-middle">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Month</th>
+              <th>Gross</th>
+              <th>Deductions</th>
+              <th>Net Pay</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in latest_payrolls %}
+            <tr>
+              <td>
+                <div class="fw-bold">{{ item.employee.name }}</div>
+                <small class="text-muted">{{ item.employee.employee_code }} · {{ item.employee.department }}</small>
+              </td>
+              <td><span class="badge bg-light text-dark border">{{ item.pay_month }}</span></td>
+              <td>₹{{ "{:,.2f}".format(item.gross) }}</td>
+              <td class="text-danger">− ₹{{ "{:,.2f}".format(item.deductions) }}</td>
+              <td class="fw-bold text-success">₹{{ "{:,.2f}".format(item.net) }}</td>
+              <td><span class="badge-status badge-paid">{{ item.status }}</span></td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('payslip', payroll_id=item.id) }}">
+                  <i class="bi bi-file-earmark-text"></i> Slip
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+        <p class="mb-2">No payroll records saved yet.</p>
+        <a href="{{ url_for('payroll') }}" class="btn btn-sm btn-primary">Create First Pay Run</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel mb-0">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="bi bi-lightning-charge text-warning"></i> AI & HR Quick Actions
+        </h2>
+      </div>
+
+      <a class="action-card" href="{{ url_for('salary_prediction') }}">
+        <div class="action-icon purple"><i class="bi bi-cpu-fill"></i></div>
+        <div>
+          <div class="fw-bold">AI Salary Predictor</div>
+          <small class="text-muted">Forecast compensation with Random Forest</small>
+        </div>
+      </a>
+
+      <a class="action-card" href="{{ url_for('salary_appraisal') }}">
+        <div class="action-icon emerald"><i class="bi bi-graph-up-arrow"></i></div>
+        <div>
+          <div class="fw-bold">AI Appraisal & Hike Recommender</div>
+          <small class="text-muted">Performance & market-based % hike calculator</small>
+        </div>
+      </a>
+
+      <a class="action-card" href="{{ url_for('attendance') }}">
+        <div class="action-icon blue"><i class="bi bi-calendar-check-fill"></i></div>
+        <div>
+          <div class="fw-bold">Attendance & LOP Deductions</div>
+          <small class="text-muted">Auto-sync unpaid leaves with payroll</small>
+        </div>
+      </a>
+
+      <a class="action-card" href="{{ url_for('chatbot') }}">
+        <div class="action-icon indigo"><i class="bi bi-chat-dots-fill"></i></div>
+        <div>
+          <div class="fw-bold">AI HR & Tax Assistant</div>
+          <small class="text-muted">Ask questions on PF, HRA, TDS, and CTC</small>
+        </div>
+      </a>
+
+      <div class="p-3 bg-light rounded-3 mt-3 border">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi bi-shield-check text-primary"></i>
+          <span class="small fw-bold">Live System Status</span>
+        </div>
+        <p class="small text-muted mb-0">
+          All payroll calculation routines conform to Indian statutory guidelines (12% EPF, Loss of Pay formula, Overtime 1.5x multiplier).
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  fetch("{{ url_for('chart_data') }}")
+    .then(res => res.json())
+    .then(data => {
+      // 1. Monthly Trend Chart
+      const trendCtx = document.getElementById("monthlyTrendChart").getContext("2d");
+      new Chart(trendCtx, {
+        type: 'bar',
+        data: {
+          labels: data.monthly_trend.labels.length ? data.monthly_trend.labels : ["Current Month"],
+          datasets: [
+            {
+              label: "Gross Pay (₹)",
+              data: data.monthly_trend.gross.length ? data.monthly_trend.gross : [{{ total_gross }}],
+              backgroundColor: "rgba(99, 102, 241, 0.4)",
+              borderColor: "#6366f1",
+              borderWidth: 2,
+              borderRadius: 6,
+            },
+            {
+              label: "Net Pay (₹)",
+              data: data.monthly_trend.net.length ? data.monthly_trend.net : [{{ total_net }}],
+              backgroundColor: "rgba(16, 185, 129, 0.8)",
+              borderColor: "#10b981",
+              borderWidth: 2,
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ": ₹" + Number(ctx.raw).toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return "₹" + Number(val).toLocaleString(); }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Department Pie/Doughnut Chart
+      const deptCtx = document.getElementById("deptPieChart").getContext("2d");
+      const deptColors = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"];
+      new Chart(deptCtx, {
+        type: 'doughnut',
+        data: {
+          labels: data.departments.labels,
+          datasets: [{
+            data: data.departments.data,
+            backgroundColor: deptColors.slice(0, data.departments.labels.length),
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return " " + ctx.label + ": ₹" + Number(ctx.raw).toLocaleString();
+                }
+              }
+            }
+          },
+          cutout: '65%'
+        }
+      });
+    })
+    .catch(err => console.error("Error loading chart data:", err));
+});
+</script>
+{% endblock %}

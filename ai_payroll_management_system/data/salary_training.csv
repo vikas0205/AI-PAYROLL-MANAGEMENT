@@ -1,0 +1,26 @@
+experience_years,education,designation,performance_rating,annual_salary
+0,UG,Junior Developer,3,300000
+1,UG,Junior Developer,3,360000
+2,UG,Python Developer,4,480000
+3,UG,Python Developer,4,600000
+4,PG,Python Developer,4,720000
+5,PG,Senior Developer,4,900000
+6,PG,Senior Developer,5,1080000
+7,PG,Team Lead,4,1200000
+8,PG,Team Lead,5,1440000
+2,UG,Data Analyst,3,420000
+3,PG,Data Analyst,4,600000
+4,PG,Data Scientist,4,840000
+5,PG,Data Scientist,5,1020000
+6,PG,Senior Developer,4,960000
+1,UG,QA Engineer,3,360000
+3,UG,QA Engineer,4,540000
+5,PG,Senior QA Engineer,4,780000
+2,UG,Frontend Developer,3,420000
+4,PG,Full Stack Developer,4,780000
+6,PG,Full Stack Developer,5,1080000
+0,UG,HR Executive,3,240000
+3,UG,HR Executive,4,420000
+5,PG,HR Manager,4,720000
+2,UG,Accountant,3,360000
+5,PG,Finance Manager,4,720000

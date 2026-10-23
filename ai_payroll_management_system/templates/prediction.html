@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}AI Salary Prediction{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Predictive Analytics</span>
+    <h1>AI Salary Prediction Engine</h1>
+    <p>Predict benchmark compensation based on role, education, tenure, and performance rating using Random Forest Regression.</p>
+  </div>
+  <span class="badge bg-purple-subtle text-purple border p-2 fw-bold" style="background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe !important;">
+    <i class="bi bi-cpu-fill"></i> Random Forest Regressor
+  </span>
+</div>
+
+<div class="row g-4">
+  <!-- Input Form Panel -->
+  <div class="col-lg-7">
+    <div class="panel">
+      <h2 class="h5 mb-3 fw-bold"><i class="bi bi-sliders text-primary"></i> Input Candidate / Employee Attributes</h2>
+      
+      <form method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Years of Experience</label>
+            <input class="form-control" type="number" min="0" max="50" name="experience_years" value="{{ form_data.experience_years }}" required>
+            <small class="text-muted">Total relevant professional work experience.</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Highest Education</label>
+            <select class="form-select" name="education">
+              {% for opt in ['UG', 'PG', 'Diploma'] %}
+              <option value="{{ opt }}" {% if form_data.education == opt %}selected{% endif %}>
+                {{ opt }} ({% if opt == 'UG' %}Undergraduate Degree{% elif opt == 'PG' %}Postgraduate / Masters{% else %}Polytechnic / Diploma{% endif %})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Designation / Organizational Role</label>
+            <select class="form-select" name="designation">
+              {% for opt in ['Junior Developer', 'Python Developer', 'Frontend Developer', 'Full Stack Developer', 'Senior Developer', 'Team Lead', 'Data Analyst', 'Data Scientist', 'QA Engineer', 'Senior QA Engineer', 'HR Executive', 'HR Manager', 'Accountant', 'Finance Manager'] %}
+              <option value="{{ opt }}" {% if form_data.designation == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Performance Rating (1 to 5)</label>
+            <select class="form-select" name="performance_rating">
+              <option value="5" {% if form_data.performance_rating|int == 5 %}selected{% endif %}>5 - Outstanding (★★★★★)</option>
+              <option value="4" {% if form_data.performance_rating|int == 4 %}selected{% endif %}>4 - Exceeds Expectations (★★★★☆)</option>
+              <option value="3" {% if form_data.performance_rating|int == 3 %}selected{% endif %}>3 - Meets Expectations (★★★☆☆)</option>
+              <option value="2" {% if form_data.performance_rating|int == 2 %}selected{% endif %}>2 - Needs Improvement (★★☆☆☆)</option>
+              <option value="1" {% if form_data.performance_rating|int == 1 %}selected{% endif %}>1 - Unsatisfactory (★☆☆☆☆)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg mt-4 w-100" type="submit">
+          <i class="bi bi-magic"></i> Generate AI Prediction
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Prediction Result & Architecture Panel -->
+  <div class="col-lg-5">
+    {% if result %}
+    <div class="panel h-100" style="background: linear-gradient(145deg, #eef2ff, #ffffff); border: 2px solid #6366f1;">
+      <span class="badge bg-primary text-white text-uppercase px-3 py-1 mb-2">Model Forecast</span>
+      <h2 class="h5 fw-bold text-dark mb-3">Estimated Compensation</h2>
+      
+      <div class="p-3 bg-white rounded-3 shadow-sm mb-3 border">
+        <small class="text-muted text-uppercase fw-bold">Annual Target CTC</small>
+        <div class="display-5 fw-bold text-primary mt-1 mb-1">
+          ₹{{ "{:,.0f}".format(result.annual) }}
+        </div>
+        <small class="text-secondary">Expected monthly: <strong>₹{{ "{:,.0f}".format(result.monthly) }}/mo</strong></small>
+      </div>
+
+      <div class="p-3 bg-white rounded-3 shadow-sm mb-3 border">
+        <small class="text-muted text-uppercase fw-bold">Market Confidence Range</small>
+        <div class="h5 fw-bold text-dark mt-1 mb-0">
+          ₹{{ "{:,.0f}".format(result.min_range) }} — ₹{{ "{:,.0f}".format(result.max_range) }}
+        </div>
+      </div>
+
+      <div class="d-grid mt-4">
+        <a class="btn btn-outline-primary" href="{{ url_for('salary_appraisal') }}">
+          <i class="bi bi-graph-up-arrow"></i> Calculate Appraisal Hike for Employee →
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="panel h-100">
+      <div class="stat-icon purple mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
+        <i class="bi bi-cpu-fill"></i>
+      </div>
+      <h2 class="h5 fw-bold mb-2">Machine Learning Architecture</h2>
+      <p class="text-muted small">
+        This prediction engine utilizes a <strong>Random Forest Regressor</strong> trained on structured company compensation benchmarks.
+      </p>
+      
+      <div class="p-3 bg-light rounded-3 mb-3 border">
+        <h6 class="fw-bold mb-1"><i class="bi bi-diagram-3 text-primary"></i> Data Pipeline</h6>
+        <ul class="small text-muted mb-0 ps-3">
+          <li><strong>Categorical Features:</strong> One-Hot Encoded (Education & Role)</li>
+          <li><strong>Numeric Features:</strong> Experience years & Performance Rating</li>
+          <li><strong>Ensemble Trees:</strong> 100 Decision Trees with random state control</li>
+        </ul>
+      </div>
+
+      <p class="small text-secondary mb-0">
+        Results provide competitive market intelligence for HR managers planning salary revisions and job offers.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

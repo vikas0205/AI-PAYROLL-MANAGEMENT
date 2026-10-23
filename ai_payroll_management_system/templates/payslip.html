@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Payslip · {{ record.employee.name }} ({{ record.pay_month }}){% endblock %}
+{% block content %}
+
+<!-- Action Bar (Hidden when printing) -->
+<div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Official Document</span>
+    <h1 class="h3 mb-0">Salary Slip Statement</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" onclick="window.print()">
+      <i class="bi bi-printer-fill"></i> Print / Save as PDF
+    </button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('payroll') }}">
+      <i class="bi bi-arrow-left"></i> Back to Payroll
+    </a>
+  </div>
+</div>
+
+<!-- Payslip Sheet -->
+<div class="payslip-sheet">
+  <div class="payslip-watermark">CONFIDENTIAL</div>
+
+  <!-- Header -->
+  <div class="payslip-header">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="fs-2">⚡</span>
+        <h2 class="h3 mb-0 fw-bold">PayPilot Technologies</h2>
+      </div>
+      <div class="text-secondary small mt-1">Enterprise HR & Cloud Payroll Division</div>
+      <div class="text-muted small">GSTIN: 33AAAAA0000A1Z5 · Bengaluru, India</div>
+    </div>
+    <div class="text-md-end mt-3 mt-md-0">
+      <div class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-3 py-2">
+        Salary Slip
+      </div>
+      <div class="h5 fw-bold mt-2 mb-0">Period: {{ record.pay_month }}</div>
+      <div class="text-muted small">Slip Ref: PAY-{{ record.pay_month.replace('-', '') }}-{{ record.id }}</div>
+    </div>
+  </div>
+
+  <!-- Employee Info Block -->
+  <div class="p-3 bg-light rounded-3 mb-4 border">
+    <div class="row g-3">
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Employee Name</small>
+        <strong>{{ record.employee.name }}</strong>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Employee Code</small>
+        <strong>{{ record.employee.employee_code }}</strong>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Department</small>
+        <span>{{ record.employee.department }}</span>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Designation</small>
+        <span>{{ record.employee.designation }}</span>
+      </div>
+
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Email Address</small>
+        <span>{{ record.employee.email }}</span>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Payment Mode</small>
+        <span>Direct Bank Transfer</span>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Attendance (Days)</small>
+        <span>
+          {% if attendance %}
+            {{ attendance.present_days }} / {{ attendance.total_working_days }} Present
+            {% if attendance.unpaid_leaves > 0 %}<span class="text-danger">({{ attendance.unpaid_leaves }} LOP)</span>{% endif %}
+          {% else %}
+            22 / 22 Standard
+          {% endif %}
+        </span>
+      </div>
+      <div class="col-sm-6 col-md-3">
+        <small class="text-muted text-uppercase fw-semibold d-block">Status</small>
+        <span class="badge bg-success-subtle text-success">Disbursed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Earnings and Deductions Table -->
+  <div class="row g-4 mb-4">
+    <!-- Earnings Column -->
+    <div class="col-md-6">
+      <div class="border rounded-3 p-3 h-100">
+        <h3 class="h6 fw-bold text-uppercase text-primary border-bottom pb-2 mb-3">
+          <i class="bi bi-plus-circle me-1"></i> Earnings Component
+        </h3>
+        <table class="table table-sm table-borderless mb-0">
+          <tbody>
+            <tr>
+              <td>Basic Salary</td>
+              <td class="text-end fw-semibold">₹{{ "{:,.2f}".format(record.basic) }}</td>
+            </tr>
+            <tr>
+              <td>House Rent / Special Allowance</td>
+              <td class="text-end fw-semibold">₹{{ "{:,.2f}".format(record.allowance) }}</td>
+            </tr>
+            <tr>
+              <td>Performance Bonus / Incentives</td>
+              <td class="text-end fw-semibold">₹{{ "{:,.2f}".format(record.bonus) }}</td>
+            </tr>
+            {% if attendance and attendance.overtime_pay > 0 %}
+            <tr>
+              <td>Overtime Compensation ({{ attendance.overtime_hours }} hrs)</td>
+              <td class="text-end fw-semibold text-success">+ ₹{{ "{:,.2f}".format(attendance.overtime_pay) }}</td>
+            </tr>
+            {% endif %}
+          </tbody>
+          <tfoot class="border-top">
+            <tr class="fw-bold">
+              <td>Total Gross Earnings</td>
+              <td class="text-end text-primary">₹{{ "{:,.2f}".format(record.gross) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Deductions Column -->
+    <div class="col-md-6">
+      <div class="border rounded-3 p-3 h-100">
+        <h3 class="h6 fw-bold text-uppercase text-danger border-bottom pb-2 mb-3">
+          <i class="bi bi-dash-circle me-1"></i> Deductions Component
+        </h3>
+        <table class="table table-sm table-borderless mb-0">
+          <tbody>
+            {% if attendance and attendance.loss_of_pay_deduction > 0 %}
+            <tr>
+              <td>Loss of Pay (LOP: {{ attendance.unpaid_leaves }} days)</td>
+              <td class="text-end text-danger fw-semibold">₹{{ "{:,.2f}".format(attendance.loss_of_pay_deduction) }}</td>
+            </tr>
+            <tr>
+              <td>Provident Fund (EPF 12%) & Statutory</td>
+              <td class="text-end text-danger fw-semibold">₹{{ "{:,.2f}".format(record.deductions - attendance.loss_of_pay_deduction) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td>Provident Fund (EPF) & Statutory Taxes</td>
+              <td class="text-end text-danger fw-semibold">₹{{ "{:,.2f}".format(record.deductions) }}</td>
+            </tr>
+            <tr>
+              <td>Professional Tax / TDS</td>
+              <td class="text-end text-muted">₹0.00</td>
+            </tr>
+            {% endif %}
+          </tbody>
+          <tfoot class="border-top">
+            <tr class="fw-bold">
+              <td>Total Deductions</td>
+              <td class="text-end text-danger">− ₹{{ "{:,.2f}".format(record.deductions) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Net Pay Highlight -->
+  <div class="p-4 rounded-3 text-center mb-4" style="background: linear-gradient(135deg, #eef2ff, #f0fdf4); border: 2px dashed #4f46e5;">
+    <span class="text-muted text-uppercase fw-bold small letter-spacing-1">Net Take-Home Salary</span>
+    <div class="display-5 fw-bold text-primary mt-1 mb-1">
+      ₹{{ "{:,.2f}".format(record.net) }}
+    </div>
+    <div class="text-secondary small">
+      Credited to Employee Bank Account · All calculations verified by PayPilot AI
+    </div>
+  </div>
+
+  <!-- Signatures / Footer -->
+  <div class="row align-items-end pt-4 mt-4 border-top">
+    <div class="col-6">
+      <small class="text-muted d-block">Employee Acknowledgement:</small>
+      <div style="height: 50px;" class="border-bottom border-secondary-subtle"></div>
+      <small class="text-muted mt-1 d-block">{{ record.employee.name }}</small>
+    </div>
+    <div class="col-6 text-end">
+      <div class="d-inline-block text-center">
+        <div class="badge bg-light text-secondary border p-2 mb-2 font-monospace">
+          ✓ DIGITALLY SIGNED
+        </div>
+        <div style="height: 40px; border-bottom: 1px solid #94a3b8; width: 180px; margin-left: auto;"></div>
+        <small class="text-muted d-block mt-1">Authorized HR Signatory</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center text-muted small mt-4 pt-2 border-top">
+    This payslip is generated electronically by PayPilot AI Payroll Management System.
+  </div>
+</div>
+
+{% endblock %}

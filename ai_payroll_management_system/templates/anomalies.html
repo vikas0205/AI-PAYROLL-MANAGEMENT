@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}AI Payroll Anomaly & Audit Scanner{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <span class="text-uppercase text-primary fw-bold small tracking-wider">Compliance & Security</span>
+    <h1>AI Payroll Anomaly & Audit Scanner</h1>
+    <p>Automated heuristic & machine learning audit to detect salary spikes, deduction mismatches, and calculation errors.</p>
+  </div>
+  <a class="btn btn-outline-primary" href="{{ url_for('payroll') }}">
+    <i class="bi bi-cash-stack"></i> Return to Payroll
+  </a>
+</div>
+
+<!-- Audit Metric Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Records Audited</span>
+        <div class="stat-icon blue"><i class="bi bi-file-earmark-check"></i></div>
+      </div>
+      <div class="stat-val">{{ audit.total_checked }}</div>
+      <div class="stat-change text-muted">All historical pay runs</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Anomalies Detected</span>
+        <div class="stat-icon {% if audit.anomalous_count > 0 %}amber{% else %}emerald{% endif %}">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+      </div>
+      <div class="stat-val {% if audit.anomalous_count > 0 %}text-warning{% else %}text-success{% endif %}">
+        {{ audit.anomalous_count }}
+      </div>
+      <div class="stat-change">Requiring HR review</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Audit Risk Score</span>
+        <div class="stat-icon purple"><i class="bi bi-shield-shaded"></i></div>
+      </div>
+      <div class="stat-val">{{ audit.risk_score }}%</div>
+      <div class="stat-change">
+        <span class="badge {% if audit.risk_score < 20 %}bg-success{% elif audit.risk_score < 50 %}bg-warning{% else %}bg-danger{% endif %}">
+          {{ audit.status }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">Compliance Engine</span>
+        <div class="stat-icon emerald"><i class="bi bi-check-all"></i></div>
+      </div>
+      <div class="stat-val fs-3 text-success">Active</div>
+      <div class="stat-change text-success">4 rule models active</div>
+    </div>
+  </div>
+</div>
+
+<!-- Detected Anomalies Table -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title">
+      <i class="bi bi-shield-exclamation text-warning"></i> Flagged Discrepancies & Audit Log
+    </h2>
+    <span class="badge bg-light text-secondary border">Real-time Rule Analysis</span>
+  </div>
+
+  {% if audit.anomalies %}
+  <div class="table-responsive">
+    <table class="custom-table align-middle">
+      <thead>
+        <tr>
+          <th>Employee Details</th>
+          <th>Month</th>
+          <th>Gross Pay</th>
+          <th>Net Pay</th>
+          <th>Detected Discrepancy Reasons</th>
+          <th>Risk Severity</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in audit.anomalies %}
+        <tr>
+          <td>
+            <div class="fw-bold">{{ a.name }}</div>
+            <small class="text-muted">{{ a.employee_code }} · {{ a.department }}</small>
+          </td>
+          <td><span class="badge bg-light text-dark border">{{ a.month }}</span></td>
+          <td>₹{{ "{:,.2f}".format(a.gross) }}</td>
+          <td>₹{{ "{:,.2f}".format(a.net) }}</td>
+          <td>
+            {% for issue in a.issues %}
+            <div class="small text-danger fw-semibold"><i class="bi bi-dot"></i> {{ issue }}</div>
+            {% endfor %}
+          </td>
+          <td>
+            {% if a.severity == 'High' %}
+            <span class="badge-status badge-risk-high">High Risk</span>
+            {% else %}
+            <span class="badge-status badge-risk-med">Medium Warning</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('payslip', payroll_id=a.payroll_id) }}">
+              Inspect Payslip →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <div class="stat-icon emerald mx-auto mb-3" style="width: 60px; height: 60px; font-size: 2rem;">
+      <i class="bi bi-shield-check"></i>
+    </div>
+    <h3 class="h5 fw-bold text-success">All Payroll Records Verified & Clean!</h3>
+    <p class="text-muted small max-w-sm mx-auto mb-3">
+      The AI audit engine inspected all saved payroll records against 4 compliance criteria. No zero-nets, out-of-band bonuses, or deduction calculation errors were discovered.
+    </p>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('payroll') }}">Create New Pay Run</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Rule Explanations -->
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="p-3 bg-white rounded-3 border h-100">
+      <h6 class="fw-bold"><i class="bi bi-dash-circle text-danger"></i> Negative Net Pay</h6>
+      <p class="small text-muted mb-0">Flags any pay slips where total deductions surpass gross earnings.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="p-3 bg-white rounded-3 border h-100">
+      <h6 class="fw-bold"><i class="bi bi-percent text-warning"></i> High Deductions Ratio</h6>
+      <p class="small text-muted mb-0">Flags records where deductions exceed 40% of the total monthly compensation.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="p-3 bg-white rounded-3 border h-100">
+      <h6 class="fw-bold"><i class="bi bi-gift text-primary"></i> Abnormal Bonus Spikes</h6>
+      <p class="small text-muted mb-0">Flags bonuses that exceed 50% of the employee's monthly basic salary.</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="p-3 bg-white rounded-3 border h-100">
+      <h6 class="fw-bold"><i class="bi bi-calculator text-secondary"></i> Gross Pay Verification</h6>
+      <p class="small text-muted mb-0">Validates that Gross strictly equals Basic + Allowances + Bonus.</p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
